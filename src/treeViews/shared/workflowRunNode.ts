@@ -79,6 +79,12 @@ export class WorkflowRunNode extends vscode.TreeItem {
   }
 
   private static _getLabel(run: WorkflowRun, workflowName?: string): string {
-    return formatWorkflowRunLabel(run.run.run_number, workflowName, run.run.head_sha, showWorkflowRunCommitHash());
+    return formatWorkflowRunLabel(
+      run.run.run_number,
+      workflowName,
+      run.run.head_sha,
+      showWorkflowRunCommitHash(),
+      run.run.head_branch
+    );
   }
 }
