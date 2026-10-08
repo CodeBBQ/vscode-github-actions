@@ -9,6 +9,7 @@
 ## Current feature proposals (2026-10-08 snapshot; consult live issues)
 
 - [#1 — Optional abbreviated commit hash on workflow runs](https://github.com/CodeBBQ/vscode-github-actions/issues/1): a settings-controlled six-hex-character suffix in parentheses for workflow-run labels. Preserve the existing workflow view and interactions. This is a distinct, focused change.
+- [#3 — Compact native workflow-run hover](https://github.com/CodeBBQ/vscode-github-actions/issues/3): accepted 2026-10-08 as a richer whole-row native `TreeItem.tooltip` in both views. Independent of #1\'s label toggle; no SHA click, new view, popup infrastructure, or tooltip-time API calls. Implement on `feature/issue-3-run-hover-tooltip` based on #1; independent review and Development Host acceptance still required.
 - [#2 — Commit- and branch-centric CI history view](https://github.com/CodeBBQ/vscode-github-actions/issues/2): an additional view showing commit/branch topology and per-commit CI status, linked to existing run details. Not a replacement for a full Git client. Investigate the data sources, visualization surface, check aggregation, pagination, refresh, and existing infrastructure before implementation.
 - At this snapshot there were no pull requests in this fork. Recheck rather than assuming that remains true.
 
