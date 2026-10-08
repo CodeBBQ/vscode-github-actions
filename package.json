@@ -87,7 +87,7 @@
         },
         "github-actions.workflows.showCommitHash": {
           "type": "boolean",
-          "description": "Show the first six characters of the head commit SHA next to each workflow run",
+          "description": "Show the abbreviated head commit SHA and branch (when available) next to each workflow run",
           "default": false,
           "scope": "window"
         },
