@@ -28,14 +28,13 @@ function workflowRun(overrides: Record<string, unknown> = {}): WorkflowRun {
 }
 
 describe("workflow-run native hover content", () => {
-  it("presents five lines from one run and a validated link", () => {
+  it("presents four scan-friendly lines from one run and a validated link", () => {
     const content = getRunHoverTooltipContent(workflowRun(), undefined, NOW);
     expect(content.lines).toEqual([
-      "Android CI #1144 — Succeeded",
+      "Succeeded · Android CI #1144",
       "Fix build cache resolution",
       "feature/cache-fix · abcdef",
-      "~1m 42s · Started 18 minutes ago",
-      "push · Triggered by @developer"
+      "~1m 42s · 18m ago · push · @developer"
     ]);
     expect(content.url).toBe("https://github.com/example/repo/actions/runs/1234");
   });
@@ -50,7 +49,7 @@ describe("workflow-run native hover content", () => {
     ["action_required", "Action required"]
   ])("renders conclusion %s accurately", (conclusion, label) => {
     const content = getRunHoverTooltipContent(workflowRun({conclusion}), undefined, NOW);
-    expect(content.lines[0]).toBe("Android CI #1144 — " + label);
+    expect(content.lines[0]).toBe(`${label} · Android CI #1144`);
   });
 
   it.each([
@@ -60,8 +59,8 @@ describe("workflow-run native hover content", () => {
     ["pending", "Pending"]
   ])("renders %s as not started", (status, label) => {
     const lines = getRunHoverTooltipContent(workflowRun({status, conclusion: null}), undefined, NOW).lines;
-    expect(lines[0]).toBe("Android CI #1144 — " + label);
-    expect(lines).toContain("Created 20 minutes ago");
+    expect(lines[0]).toBe(`${label} · Android CI #1144`);
+    expect(lines).toContain("created 20m ago · push · @developer");
     expect(lines.join(" ")).not.toContain("~");
     expect(lines.join(" ")).not.toContain("Started");
   });
@@ -73,11 +72,11 @@ describe("workflow-run native hover content", () => {
       NOW
     ).lines;
     const skipped = getRunHoverTooltipContent(workflowRun({conclusion: "skipped"}), undefined, NOW).lines;
-    expect(running[0]).toContain("In progress");
-    expect(running).toContain("Started 18 minutes ago");
+    expect(running[0]).toBe("In progress · Android CI #1144");
+    expect(running).toContain("18m ago · push · @developer");
     expect(running.join(" ")).not.toContain("~");
     expect(skipped.join(" ")).not.toContain("~");
-    expect(getRunHoverTooltipContent(workflowRun({conclusion: null}), undefined, NOW).lines[0]).toContain("Completed");
+    expect(getRunHoverTooltipContent(workflowRun({conclusion: null}), undefined, NOW).lines[0]).toBe("Completed · Android CI #1144");
   });
 
   it("omits missing commit details rather than substituting the run display title", () => {
@@ -97,7 +96,7 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     );
-    expect(content.lines).toEqual(["Workflow #1144 — Succeeded"]);
+    expect(content.lines).toEqual(["Succeeded · Workflow #1144"]);
   });
 
   it("keeps a valid SHA independent of the suffix setting and marks PR-run semantics", () => {
@@ -118,13 +117,13 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     ).lines;
-    expect(rerun[rerun.length - 1]).toBe("workflow_dispatch · Triggered by @developer · Attempt 3");
+    expect(rerun[rerun.length - 1]).toBe("~1m 42s · 18m ago · workflow_dispatch · @developer · Attempt 3");
     const fallback = getRunHoverTooltipContent(
       workflowRun({triggering_actor: null, run_attempt: 2}),
       undefined,
       NOW
     ).lines;
-    expect(fallback[fallback.length - 1]).toBe("push · Actor @original-author · Attempt 2");
+    expect(fallback[fallback.length - 1]).toBe("~1m 42s · 18m ago · push · actor @original-author · Attempt 2");
   });
 
   it("rejects malformed, future and negative timestamps without inventing durations", () => {
@@ -145,7 +144,7 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     ).lines;
-    expect(created).toContain("Created 20 minutes ago");
+    expect(created).toContain("created 20m ago · push · @developer");
   });
 
   it("handles multi-day duration with explicit approximate notation", () => {
@@ -154,7 +153,7 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     ).lines;
-    expect(lines).toContain("~1d 2h 2m 3s · Started 2 days ago");
+    expect(lines).toContain("~1d 2h 2m 3s · 2d ago · push · @developer");
   });
 
   it("bounds every untrusted field and removes multiline/control injection", () => {
@@ -168,7 +167,7 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     ).lines;
-    expect(lines).toHaveLength(5);
+    expect(lines).toHaveLength(4);
     expect(lines[0].length).toBeLessThan(95);
     expect(lines[1]).toBe("Fix [title](command:evil)");
     expect(lines.join(" ")).not.toContain("\n");
@@ -183,7 +182,7 @@ describe("workflow-run native hover content", () => {
       undefined,
       NOW
     ).lines;
-    expect(Array.from(lines[1]).length).toBe(100);
+    expect(Array.from(lines[1]).length).toBe(72);
     expect(lines[1].endsWith("…")).toBe(true);
   });
 
@@ -216,7 +215,60 @@ describe("workflow-run native hover content", () => {
     expect(formatWorkflowRunLabel(run.run_number, undefined, run.head_sha, true)).toBe("#1144 (abcdef)");
     expect(getRunHoverTooltipContent(run, undefined, NOW).lines).toContain("feature/cache-fix · abcdef");
     expect(getRunHoverTooltipContent(workflowRun({conclusion: "failure"}), undefined, NOW).lines[0]).toBe(
-      "Android CI #1144 — Failed"
+      "Failed · Android CI #1144"
     );
   });
+  it("truncates long workflow, commit and branch names for compact width", () => {
+    const content = getRunHoverTooltipContent(
+      workflowRun({
+        name: "Workflow" + "x".repeat(100),
+        head_commit: {message: "A".repeat(120)},
+        head_branch: "feature/" + "b".repeat(120)
+      }),
+      undefined,
+      NOW
+    );
+    expect(content.lines).toHaveLength(4);
+    expect(content.lines[0]).toBe(`Succeeded · ${"Workflow" + "x".repeat(43) + "…"} #1144`);
+    expect(Array.from(content.lines[1]).length).toBe(72);
+    expect(content.lines[1].endsWith("…")).toBe(true);
+    expect(Array.from(content.lines[2].split(" · ")[0]).length).toBe(52);
+    expect(content.lines[2]).toContain(" · abcdef");
+  });
+
+  it("uses compact age units and still labels queued creation time", () => {
+    const minute = getRunHoverTooltipContent(
+      workflowRun({run_started_at: "2026-10-08T11:59:30Z", updated_at: "2026-10-08T12:00:00Z"}),
+      undefined,
+      NOW
+    ).lines;
+    expect(minute[minute.length - 1]).toBe("~30s · now · push · @developer");
+
+    const hour = getRunHoverTooltipContent(
+      workflowRun({run_started_at: "2026-10-08T10:00:00Z", updated_at: "2026-10-08T10:02:00Z"}),
+      undefined,
+      NOW
+    ).lines;
+    expect(hour[hour.length - 1]).toBe("~2m · 2h ago · push · @developer");
+
+    const queued = getRunHoverTooltipContent(
+      workflowRun({status: "queued", conclusion: null, run_started_at: null}),
+      undefined,
+      NOW
+    ).lines;
+    expect(queued[queued.length - 1]).toBe("created 20m ago · push · @developer");
+    expect(queued.join(" ")).not.toContain("~");
+  });
+
+  it("retains bounded event and actor values in the combined metadata line", () => {
+    const lines = getRunHoverTooltipContent(
+      workflowRun({event: "e".repeat(90), triggering_actor: {login: "a".repeat(90)}, run_attempt: 2}),
+      undefined,
+      NOW
+    ).lines;
+    expect(lines).toHaveLength(4);
+    expect(lines[3]).toContain(` · ${"e".repeat(23)}… · @${"a".repeat(31)}… · Attempt 2`);
+    expect(lines[3].length).toBeLessThan(100);
+  });
+
 });
