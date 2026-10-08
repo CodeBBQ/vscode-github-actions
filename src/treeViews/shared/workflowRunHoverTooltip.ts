@@ -53,7 +53,7 @@ function runStatus(run: WorkflowRun): string | undefined {
   const readable = Object.prototype.hasOwnProperty.call(labels, state)
     ? labels[state]
     : shortText(state.replace(/_/g, " "), 32);
-  return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : undefined;
+  return readable ? `${readable.charAt(0).toUpperCase()}${readable.slice(1)}` : undefined;
 }
 
 function timestamp(value: unknown): number | undefined {
@@ -167,7 +167,7 @@ export function getRunHoverTooltipContent(
       ? run.head_sha.slice(0, 6)
       : undefined;
   // A pull_request run SHA may be a synthetic merge commit, not the contributor's tip.
-  const displayedSha = sha && run.event === "pull_request" ? sha + " (PR run SHA)" : sha;
+  const displayedSha = sha && run.event === "pull_request" ? `${sha} (PR run SHA)` : sha;
   const revision = [branch, displayedSha].filter(Boolean).join(" · ");
   if (revision) {
     lines.push(revision);
@@ -181,15 +181,15 @@ export function getRunHoverTooltipContent(
       const updated = timestamp(run.updated_at);
       if (updated !== undefined && updated > started) {
         // updated_at is only an approximation of the actual completion time.
-        timing.push("~" + compactDuration(updated - started));
+        timing.push(`~${compactDuration(updated - started)}`);
       }
     }
-    timing.push("Started " + dayjs(started).from(dayjs(now)));
+    timing.push(`Started ${dayjs(started).from(dayjs(now))}`);
     lines.push(timing.join(" · "));
   } else if (notStarted) {
     const created = timestamp(run.created_at);
     if (created !== undefined && created <= now) {
-      lines.push("Created " + dayjs(created).from(dayjs(now)));
+      lines.push(`Created ${dayjs(created).from(dayjs(now))}`);
     }
   }
 
@@ -201,9 +201,9 @@ export function getRunHoverTooltipContent(
   const triggeringActor = shortText(run.triggering_actor?.login, 60);
   const originalActor = shortText(run.actor?.login, 60);
   if (triggeringActor) {
-    trigger.push("Triggered by @" + triggeringActor);
+    trigger.push(`Triggered by @${triggeringActor}`);
   } else if (originalActor) {
-    trigger.push("Actor @" + originalActor);
+    trigger.push(`Actor @${originalActor}`);
   }
   if (Number.isInteger(run.run_attempt) && (run.run_attempt || 0) > 1) {
     trigger.push(`Attempt ${run.run_attempt}`);
