@@ -18,7 +18,7 @@ function shortText(value: unknown, maxLength: number): string | undefined {
     return undefined;
   }
 
-  const normalized = value.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ").replace(/\s+/g, " ").trim();
+  const normalized = value.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ").replace(/\s+/g, " ").trim();
   if (!normalized) {
     return undefined;
   }
@@ -92,8 +92,20 @@ function compactDuration(milliseconds: number): string {
   const minutes = Math.floor(seconds / 60);
   seconds %= 60;
 
-  const parts = [days && days + "d", hours && hours + "h", minutes && minutes + "m", seconds && seconds + "s"];
-  return parts.filter(Boolean).join(" ") || "0s";
+  const parts: string[] = [];
+  if (days) {
+    parts.push(`${days}d`);
+  }
+  if (hours) {
+    parts.push(`${hours}h`);
+  }
+  if (minutes) {
+    parts.push(`${minutes}m`);
+  }
+  if (seconds) {
+    parts.push(`${seconds}s`);
+  }
+  return parts.join(" ") || "0s";
 }
 
 /** Only direct HTTPS links to this run are exposed; works with Enterprise hostnames. */
@@ -137,7 +149,7 @@ export function getRunHoverTooltipContent(
   const lines: string[] = [];
   const name = shortText(workflowName, 64) || shortText(run.name, 64) || "Workflow";
   const status = runStatus(run);
-  lines.push(name + " #" + run.run_number + (status ? " — " + status : ""));
+  lines.push(`${name} #${run.run_number}${status ? ` — ${status}` : ""}`);
 
   // display_title is a run title, not necessarily the subject of head_commit.
   const subject =
@@ -194,7 +206,7 @@ export function getRunHoverTooltipContent(
     trigger.push("Actor @" + originalActor);
   }
   if (Number.isInteger(run.run_attempt) && (run.run_attempt || 0) > 1) {
-    trigger.push("Attempt " + run.run_attempt);
+    trigger.push(`Attempt ${run.run_attempt}`);
   }
   if (trigger.length) {
     lines.push(trigger.join(" · "));
