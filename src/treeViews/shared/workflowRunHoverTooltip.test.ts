@@ -220,6 +220,7 @@ describe("workflow-run native hover content", () => {
       "Failed · Android CI #1144"
     );
   });
+
   it("truncates long workflow, commit and branch names for compact width", () => {
     const content = getRunHoverTooltipContent(
       workflowRun({
@@ -272,5 +273,4 @@ describe("workflow-run native hover content", () => {
     expect(lines[3]).toContain(` · ${"e".repeat(23)}… · @${"a".repeat(31)}… · Attempt 2`);
     expect(lines[3].length).toBeLessThan(100);
   });
-
 });
