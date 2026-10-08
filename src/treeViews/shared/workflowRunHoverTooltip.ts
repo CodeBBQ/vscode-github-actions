@@ -50,7 +50,9 @@ function runStatus(run: WorkflowRun): string | undefined {
     return undefined;
   }
 
-  const readable = labels[state] || shortText(state.replace(/_/g, " "), 32);
+  const readable = Object.prototype.hasOwnProperty.call(labels, state)
+    ? labels[state]
+    : shortText(state.replace(/_/g, " "), 32);
   return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : undefined;
 }
 
@@ -60,7 +62,7 @@ function timestamp(value: unknown): number | undefined {
   }
 
   // GitHub timestamps are timezone-qualified ISO-8601, not arbitrary Date.parse input.
-  const match = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d+)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.exec(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
   if (!match) {
     return undefined;
   }
@@ -90,14 +92,8 @@ function compactDuration(milliseconds: number): string {
   const minutes = Math.floor(seconds / 60);
   seconds %= 60;
 
-  return [
-    days && days + "d",
-    hours && hours + "h",
-    minutes && minutes + "m",
-    seconds && seconds + "s"
-  ]
-    .filter(Boolean)
-    .join(" ") || "0s";
+  const parts = [days && days + "d", hours && hours + "h", minutes && minutes + "m", seconds && seconds + "s"];
+  return parts.filter(Boolean).join(" ") || "0s";
 }
 
 /** Only direct HTTPS links to this run are exposed; works with Enterprise hostnames. */
@@ -145,14 +141,19 @@ export function getRunHoverTooltipContent(
 
   // display_title is a run title, not necessarily the subject of head_commit.
   const subject =
-    typeof run.head_commit?.message === "string" ? run.head_commit.message.split(/[\r\n\u2028\u2029]/, 1)[0] : undefined;
+    typeof run.head_commit?.message === "string"
+      ? run.head_commit.message.split(/[\r\n\u2028\u2029]/, 1)[0]
+      : undefined;
   const commitSubject = shortText(subject, 100);
   if (commitSubject) {
     lines.push(commitSubject);
   }
 
   const branch = shortText(run.head_branch, 80);
-  const sha = typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha) ? run.head_sha.slice(0, 6) : undefined;
+  const sha =
+    typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha)
+      ? run.head_sha.slice(0, 6)
+      : undefined;
   // A pull_request run SHA may be a synthetic merge commit, not the contributor's tip.
   const displayedSha = sha && run.event === "pull_request" ? sha + " (PR run SHA)" : sha;
   const revision = [branch, displayedSha].filter(Boolean).join(" · ");
