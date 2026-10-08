@@ -76,7 +76,9 @@ describe("workflow-run native hover content", () => {
     expect(running).toContain("18m ago · push · @developer");
     expect(running.join(" ")).not.toContain("~");
     expect(skipped.join(" ")).not.toContain("~");
-    expect(getRunHoverTooltipContent(workflowRun({conclusion: null}), undefined, NOW).lines[0]).toBe("Completed · Android CI #1144");
+    expect(getRunHoverTooltipContent(workflowRun({conclusion: null}), undefined, NOW).lines[0]).toBe(
+      "Completed · Android CI #1144"
+    );
   });
 
   it("omits missing commit details rather than substituting the run display title", () => {
