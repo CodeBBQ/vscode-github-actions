@@ -18,7 +18,10 @@ function shortText(value: unknown, maxLength: number): string | undefined {
     return undefined;
   }
 
-  const normalized = value.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ").replace(/\s+/g, " ").trim();
+  const normalized = value
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!normalized) {
     return undefined;
   }
@@ -163,9 +166,7 @@ export function getRunHoverTooltipContent(
 
   const branch = shortText(run.head_branch, 80);
   const sha =
-    typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha)
-      ? run.head_sha.slice(0, 6)
-      : undefined;
+    typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha) ? run.head_sha.slice(0, 6) : undefined;
   // A pull_request run SHA may be a synthetic merge commit, not the contributor's tip.
   const displayedSha = sha && run.event === "pull_request" ? `${sha} (PR run SHA)` : sha;
   const revision = [branch, displayedSha].filter(Boolean).join(" · ");
