@@ -61,8 +61,14 @@ export class WorkflowRunNode extends vscode.TreeItem {
       if (index > 0) {
         tooltip.appendMarkdown("  \n");
       }
-      // GitHub-provided data is escaped by appendText, never interpolated as Markdown.
+      // Emphasize the status-first heading without treating GitHub text as Markdown.
+      if (index === 0) {
+        tooltip.appendMarkdown("**");
+      }
       tooltip.appendText(line);
+      if (index === 0) {
+        tooltip.appendMarkdown("**");
+      }
     }
 
     if (content.url) {
