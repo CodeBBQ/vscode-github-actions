@@ -5,7 +5,7 @@ import {GitHubRepoContext} from "../../git/repository";
 import {RunStore} from "../../store/store";
 import {WorkflowRun} from "../../store/workflowRun";
 import {getIconForWorkflowRun} from "../icons";
-import {getEventString, getStatusString} from "./runTooltipHelper";
+import {getRunHoverTooltipContent} from "./workflowRunHoverTooltip";
 import {NoWorkflowJobsNode} from "./noWorkflowJobsNode";
 import {PreviousAttemptsNode} from "./previousAttemptsNode";
 import {WorkflowJobNode} from "./workflowJobNode";
@@ -54,17 +54,22 @@ export class WorkflowRunNode extends vscode.TreeItem {
   }
 
   getTooltip(): vscode.MarkdownString {
-    let markdownString = "";
+    const content = getRunHoverTooltipContent(this.run.run, this.workflowName);
+    const tooltip = new vscode.MarkdownString();
 
-    if (this.run.hasPreviousAttempts && this.run.run.run_attempt) {
-      markdownString += `Attempt #${this.run.run.run_attempt} `;
+    for (const [index, line] of content.lines.entries()) {
+      if (index > 0) {
+        tooltip.appendMarkdown("  \n");
+      }
+      // GitHub-provided data is escaped by appendText, never interpolated as Markdown.
+      tooltip.appendText(line);
     }
 
-    markdownString += getStatusString(this.run, markdownString.length == 0);
-    markdownString += `\n\n`;
-    markdownString += getEventString(this.run);
+    if (content.url) {
+      tooltip.appendMarkdown("\n\n[Open run on GitHub](" + content.url + ")");
+    }
 
-    return new vscode.MarkdownString(markdownString);
+    return tooltip;
   }
 
   private static _getLabel(run: WorkflowRun, workflowName?: string): string {
