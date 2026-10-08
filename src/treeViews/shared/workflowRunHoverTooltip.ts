@@ -1,8 +1,4 @@
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime.js";
 import type {WorkflowRun} from "../../model";
-
-dayjs.extend(relativeTime);
 
 /**
  * Compact run-row hover content using already-loaded workflow-run fields.
@@ -111,6 +107,23 @@ function compactDuration(milliseconds: number): string {
   return parts.join(" ") || "0s";
 }
 
+/** A short, approximate age; never confuse queued creation time with the run start. */
+function compactAge(then: number, now: number): string {
+  const seconds = Math.floor((now - then) / 1000);
+  if (seconds < 60) {
+    return "now";
+  }
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 /** Only direct HTTPS links to this run are exposed; works with Enterprise hostnames. */
 function safeRunUrl(value: unknown, runId: number): string | undefined {
   if (typeof value !== "string") {
@@ -150,21 +163,22 @@ export function getRunHoverTooltipContent(
   now = Date.now()
 ): RunHoverTooltipContent {
   const lines: string[] = [];
-  const name = shortText(workflowName, 64) || shortText(run.name, 64) || "Workflow";
+  const name = shortText(workflowName, 52) || shortText(run.name, 52) || "Workflow";
   const status = runStatus(run);
-  lines.push(`${name} #${run.run_number}${status ? ` — ${status}` : ""}`);
+  const identity = `${name} #${run.run_number}`;
+  lines.push(status ? `${status} · ${identity}` : identity);
 
   // display_title is a run title, not necessarily the subject of head_commit.
   const subject =
     typeof run.head_commit?.message === "string"
       ? run.head_commit.message.split(/[\r\n\u2028\u2029]/, 1)[0]
       : undefined;
-  const commitSubject = shortText(subject, 100);
+  const commitSubject = shortText(subject, 72);
   if (commitSubject) {
     lines.push(commitSubject);
   }
 
-  const branch = shortText(run.head_branch, 80);
+  const branch = shortText(run.head_branch, 52);
   const sha =
     typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha) ? run.head_sha.slice(0, 6) : undefined;
   // A pull_request run SHA may be a synthetic merge commit, not the contributor's tip.
@@ -174,44 +188,44 @@ export function getRunHoverTooltipContent(
     lines.push(revision);
   }
 
+  // A single secondary line keeps the tooltip scannable. All values are
+  // still sanitized plain text, never interpreted as Markdown links.
+  const metadata: string[] = [];
   const started = timestamp(run.run_started_at);
   const notStarted = ["queued", "requested", "waiting", "pending"].includes(run.status || "");
   if (!notStarted && started !== undefined && started <= now) {
-    const timing: string[] = [];
     if (run.status === "completed" && run.conclusion && run.conclusion !== "skipped") {
       const updated = timestamp(run.updated_at);
       if (updated !== undefined && updated > started) {
         // updated_at is only an approximation of the actual completion time.
-        timing.push(`~${compactDuration(updated - started)}`);
+        metadata.push(`~${compactDuration(updated - started)}`);
       }
     }
-    timing.push(`Started ${dayjs(started).from(dayjs(now))}`);
-    lines.push(timing.join(" · "));
+    metadata.push(compactAge(started, now));
   } else if (notStarted) {
     const created = timestamp(run.created_at);
     if (created !== undefined && created <= now) {
-      lines.push(`Created ${dayjs(created).from(dayjs(now))}`);
+      metadata.push(`created ${compactAge(created, now)}`);
     }
   }
 
-  const trigger: string[] = [];
-  const event = shortText(run.event, 40);
+  const event = shortText(run.event, 24);
   if (event) {
-    trigger.push(event);
+    metadata.push(event);
   }
-  const triggeringActor = shortText(run.triggering_actor?.login, 60);
-  const originalActor = shortText(run.actor?.login, 60);
+  const triggeringActor = shortText(run.triggering_actor?.login, 32);
+  const originalActor = shortText(run.actor?.login, 32);
   if (triggeringActor) {
-    trigger.push(`Triggered by @${triggeringActor}`);
+    metadata.push(`@${triggeringActor}`);
   } else if (originalActor) {
-    trigger.push(`Actor @${originalActor}`);
+    metadata.push(`actor @${originalActor}`);
   }
   const attempt = run.run_attempt;
   if (typeof attempt === "number" && Number.isInteger(attempt) && attempt > 1) {
-    trigger.push(`Attempt ${attempt}`);
+    metadata.push(`Attempt ${attempt}`);
   }
-  if (trigger.length) {
-    lines.push(trigger.join(" · "));
+  if (metadata.length) {
+    lines.push(metadata.join(" · "));
   }
 
   return {lines, url: safeRunUrl(run.html_url, run.id)};
