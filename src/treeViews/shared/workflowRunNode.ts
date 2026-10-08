@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 
+import {showWorkflowRunCommitHash} from "../../configuration/configuration";
 import {GitHubRepoContext} from "../../git/repository";
 import {RunStore} from "../../store/store";
 import {WorkflowRun} from "../../store/workflowRun";
@@ -8,6 +9,7 @@ import {getEventString, getStatusString} from "./runTooltipHelper";
 import {NoWorkflowJobsNode} from "./noWorkflowJobsNode";
 import {PreviousAttemptsNode} from "./previousAttemptsNode";
 import {WorkflowJobNode} from "./workflowJobNode";
+import {formatWorkflowRunLabel} from "./workflowRunLabel";
 
 export type WorkflowRunCommandArgs = Pick<WorkflowRunNode, "gitHubRepoContext" | "run" | "store">;
 
@@ -25,12 +27,16 @@ export class WorkflowRunNode extends vscode.TreeItem {
 
   updateRun(run: WorkflowRun) {
     this.run = run;
-    this.label = WorkflowRunNode._getLabel(run, this.workflowName);
+    this.refreshLabel();
 
     this.contextValue = this.run.contextValue(this.gitHubRepoContext.permissionLevel);
 
     this.iconPath = getIconForWorkflowRun(this.run.run);
     this.tooltip = this.getTooltip();
+  }
+
+  refreshLabel(): void {
+    this.label = WorkflowRunNode._getLabel(this.run, this.workflowName);
   }
 
   async getJobs(): Promise<(WorkflowJobNode | NoWorkflowJobsNode | PreviousAttemptsNode)[]> {
@@ -62,6 +68,6 @@ export class WorkflowRunNode extends vscode.TreeItem {
   }
 
   private static _getLabel(run: WorkflowRun, workflowName?: string): string {
-    return `${workflowName ? workflowName + " " : ""}#${run.run.run_number}`;
+    return formatWorkflowRunLabel(run.run.run_number, workflowName, run.run.head_sha, showWorkflowRunCommitHash());
   }
 }

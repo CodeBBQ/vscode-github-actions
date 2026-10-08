@@ -6,6 +6,7 @@ const settingsKey = "github-actions";
 const DEFAULT_GITHUB_API = "https://api.github.com";
 const reloadWindowAction = "Reload Window";
 const debuggerEnabledSettingsKey = getSettingsKey("debugger.enabled");
+export const showCommitHashSettingsKey = getSettingsKey("workflows.showCommitHash");
 
 let debuggerSettingReloadPromptVisible = false;
 
@@ -72,6 +73,10 @@ export function pinnedWorkflowsRefreshInterval(): number {
 
 export function getRemoteName(): string {
   return getConfiguration().get<string>(getSettingsKey("remote-name"), "origin");
+}
+
+export function showWorkflowRunCommitHash(): boolean {
+  return getConfiguration().get<boolean>(showCommitHashSettingsKey, false);
 }
 
 export function isDebuggerEnabled(): boolean {

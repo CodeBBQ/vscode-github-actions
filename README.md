@@ -14,6 +14,9 @@ The GitHub Actions extension lets you manage your workflows, view the workflow r
 
 ![View workflow runs and logs](./media/workflows.png)
 
+To display the first six characters of each workflow run's commit SHA in parentheses, enable
+`github-actions.workflows.showCommitHash` in VS Code settings. This setting is disabled by default.
+
 ### Workflow authoring
 
 Be more confident when authoring and modifying workflows. Find errors before committing workflows with:

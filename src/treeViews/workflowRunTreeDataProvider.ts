@@ -17,6 +17,13 @@ export abstract class WorkflowRunTreeDataProvider {
     });
   }
 
+  refreshRunLabels(): void {
+    for (const node of this._runNodes.values()) {
+      node.refreshLabel();
+      this._updateNode(node);
+    }
+  }
+
   protected runNodes(
     gitHubRepoContext: GitHubRepoContext,
     runData: WorkflowRun[],

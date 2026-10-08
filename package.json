@@ -85,6 +85,12 @@
           "default": 30,
           "scope": "window"
         },
+        "github-actions.workflows.showCommitHash": {
+          "type": "boolean",
+          "description": "Show the first six characters of the head commit SHA next to each workflow run",
+          "default": false,
+          "scope": "window"
+        },
         "github-actions.remote-name": {
           "type": "string",
           "description": "The name of the repository's git remote that points to GitHub",
