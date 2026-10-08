@@ -161,7 +161,8 @@ export function getRunHoverTooltipContent(
   }
 
   const started = timestamp(run.run_started_at);
-  if (started !== undefined && started <= now) {
+  const notStarted = ["queued", "requested", "waiting", "pending"].includes(run.status || "");
+  if (!notStarted && started !== undefined && started <= now) {
     const timing: string[] = [];
     if (run.status === "completed" && run.conclusion && run.conclusion !== "skipped") {
       const updated = timestamp(run.updated_at);
@@ -172,7 +173,7 @@ export function getRunHoverTooltipContent(
     }
     timing.push("Started " + dayjs(started).from(dayjs(now)));
     lines.push(timing.join(" · "));
-  } else if (["queued", "requested", "waiting", "pending"].includes(run.status || "")) {
+  } else if (notStarted) {
     const created = timestamp(run.created_at);
     if (created !== undefined && created <= now) {
       lines.push("Created " + dayjs(created).from(dayjs(now)));
