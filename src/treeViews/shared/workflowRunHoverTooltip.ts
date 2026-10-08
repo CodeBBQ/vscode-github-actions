@@ -205,8 +205,9 @@ export function getRunHoverTooltipContent(
   } else if (originalActor) {
     trigger.push(`Actor @${originalActor}`);
   }
-  if (Number.isInteger(run.run_attempt) && (run.run_attempt || 0) > 1) {
-    trigger.push(`Attempt ${run.run_attempt}`);
+  const attempt = run.run_attempt;
+  if (typeof attempt === "number" && Number.isInteger(attempt) && attempt > 1) {
+    trigger.push(`Attempt ${attempt}`);
   }
   if (trigger.length) {
     lines.push(trigger.join(" · "));
