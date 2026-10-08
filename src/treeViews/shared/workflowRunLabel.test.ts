@@ -33,6 +33,7 @@ describe("formatWorkflowRunLabel", () => {
     expect(formatWorkflowRunLabel(1144, "CI", SHA, true)).toBe("CI #1144 (abcdef)");
     expect(formatWorkflowRunLabel(1144, "CI", SHA, false)).toBe("CI #1144");
   });
+
   it("shows the branch beside a valid abbreviated SHA when enabled", () => {
     expect(formatWorkflowRunLabel(213, undefined, SHA, true, "main")).toBe("#213 (abcdef; main)");
     expect(formatWorkflowRunLabel(212, "Android CI", SHA, true, "feature/new-ui")).toBe(
