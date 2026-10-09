@@ -47,7 +47,9 @@ describe("workflow-run copy metadata", () => {
   });
 
   it("propagates clipboard errors instead of reporting a successful copy", async () => {
-    const clipboard = {writeText: jest.fn<(value: string) => Promise<void>>().mockRejectedValue(new Error("clipboard unavailable"))};
+    const clipboard = {
+      writeText: jest.fn<(value: string) => Promise<void>>().mockRejectedValue(new Error("clipboard unavailable"))
+    };
     await expect(copyWorkflowRunMetadata(run, "id", clipboard)).rejects.toThrow("clipboard unavailable");
   });
 });
