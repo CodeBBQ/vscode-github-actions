@@ -49,3 +49,4 @@ describe("workflow-run copy metadata", () => {
     const clipboard = {writeText: jest.fn().mockRejectedValue(new Error("clipboard unavailable"))};
     await expect(copyWorkflowRunMetadata(run, "id", clipboard)).rejects.toThrow("clipboard unavailable");
   });
+});
