@@ -189,6 +189,26 @@
         "when": "viewItem =~ /run/ && viewItem =~ /cancelable/"
       },
       {
+        "command": "github-actions.workflow.run.copy-commit-hash",
+        "category": "GitHub Actions",
+        "title": "Copy Commit Hash"
+      },
+      {
+        "command": "github-actions.workflow.run.copy-branch-name",
+        "category": "GitHub Actions",
+        "title": "Copy Branch Name"
+      },
+      {
+        "command": "github-actions.workflow.run.copy-run-id",
+        "category": "GitHub Actions",
+        "title": "Copy Run ID"
+      },
+      {
+        "command": "github-actions.workflow.run.copy-run-number",
+        "category": "GitHub Actions",
+        "title": "Copy Run Number"
+      },
+      {
         "command": "github-actions.settings.secrets.manage",
         "category": "GitHub Actions",
         "title": "Add new secret",
@@ -399,11 +419,33 @@
         },
         {
           "command": "github-actions.workflow.run.cancel",
-          "when": "viewItem =~ /run/ && viewItem =~ /cancelable/"
+          "when": "viewItem =~ /run/ && viewItem =~ /cancelable/",
+          "group": "1_run@2"
         },
         {
           "command": "github-actions.workflow.run.rerun",
-          "when": "viewItem =~ /run/ && viewItem =~ /rerunnable/"
+          "when": "viewItem =~ /run/ && viewItem =~ /rerunnable/",
+          "group": "1_run@1"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-commit-hash",
+          "when": "viewItem =~ /run/ && viewItem =~ /copyable-commit/",
+          "group": "2_copy@1"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-branch-name",
+          "when": "viewItem =~ /run/ && viewItem =~ /copyable-branch/",
+          "group": "2_copy@2"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-run-id",
+          "when": "viewItem =~ /run/",
+          "group": "2_copy@3"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-run-number",
+          "when": "viewItem =~ /run/",
+          "group": "2_copy@4"
         },
         {
           "command": "github-actions.settings.secret.add",
@@ -482,6 +524,22 @@
         },
         {
           "command": "github-actions.workflow.run.cancel",
+          "when": "false"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-commit-hash",
+          "when": "false"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-branch-name",
+          "when": "false"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-run-id",
+          "when": "false"
+        },
+        {
+          "command": "github-actions.workflow.run.copy-run-number",
           "when": "false"
         },
         {

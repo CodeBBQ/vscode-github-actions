@@ -10,6 +10,7 @@
 
 - [#1 — Optional abbreviated commit hash on workflow runs](https://github.com/CodeBBQ/vscode-github-actions/issues/1): a settings-controlled six-hex-character suffix in parentheses for workflow-run labels. Preserve the existing workflow view and interactions. This is a distinct, focused change.
 - [#2 — Commit- and branch-centric CI history view](https://github.com/CodeBBQ/vscode-github-actions/issues/2): an additional view showing commit/branch topology and per-commit CI status, linked to existing run details. Not a replacement for a full Git client. Investigate the data sources, visualization surface, check aggregation, pagination, refresh, and existing infrastructure before implementation.
+- [#4 — Copy workflow-run metadata](https://github.com/CodeBBQ/vscode-github-actions/issues/4) (accepted 2026-10-09): four ordered native right-click clipboard actions (full commit SHA, branch name, run ID, run number) for both existing run views; no network requests or settings. Implement independently from #1–#3.
 - At this snapshot there were no pull requests in this fork. Recheck rather than assuming that remains true.
 
 ## Accepted direction and open decisions
