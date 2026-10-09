@@ -14,9 +14,7 @@ export function registerCopyWorkflowRunMetadata(context: vscode.ExtensionContext
   for (const {command, field, label} of actions) {
     context.subscriptions.push(
       vscode.commands.registerCommand(command, async (args?: WorkflowRunCommandArgs) => {
-        const copied =
-          args?.run?.run &&
-          (await copyWorkflowRunMetadata(args.run.run, field, vscode.env.clipboard));
+        const copied = args?.run?.run && (await copyWorkflowRunMetadata(args.run.run, field, vscode.env.clipboard));
 
         if (!copied) {
           await vscode.window.showWarningMessage(`${label} is unavailable for this workflow run.`);
