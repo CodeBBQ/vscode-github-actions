@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 
 import {GitHubRepoContext} from "../../git/repository";
+import {getCopyableRunContextValues} from "../../commands/workflowRunMetadata";
 import {RunStore} from "../../store/store";
 import {WorkflowRun} from "../../store/workflowRun";
 import {getIconForWorkflowRun} from "../icons";
@@ -27,7 +28,10 @@ export class WorkflowRunNode extends vscode.TreeItem {
     this.run = run;
     this.label = WorkflowRunNode._getLabel(run, this.workflowName);
 
-    this.contextValue = this.run.contextValue(this.gitHubRepoContext.permissionLevel);
+    this.contextValue = [
+      this.run.contextValue(this.gitHubRepoContext.permissionLevel),
+      ...getCopyableRunContextValues(this.run.run)
+    ].join(" ");
 
     this.iconPath = getIconForWorkflowRun(this.run.run);
     this.tooltip = this.getTooltip();
