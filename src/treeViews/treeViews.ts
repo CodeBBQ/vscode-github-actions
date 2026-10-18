@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 
 import {canReachGitHubAPI} from "../api/canReachGitHubAPI";
+import {showCommitHashSettingsKey} from "../configuration/configuration";
 import {executeCacheClearCommand} from "../workflow/languageServer";
 import {getGitHubContext} from "../git/repository";
 import {logDebug} from "../log";
@@ -19,6 +20,15 @@ export async function initTreeViews(context: vscode.ExtensionContext, store: Run
   const currentBranchTreeProvider = new CurrentBranchTreeProvider(store);
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider("github-actions.current-branch", currentBranchTreeProvider)
+  );
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration(showCommitHashSettingsKey)) {
+        workflowTreeProvider.refreshRunLabels();
+        currentBranchTreeProvider.refreshRunLabels();
+      }
+    })
   );
 
   context.subscriptions.push(
