@@ -1,0 +1,232 @@
+import type {WorkflowRun} from "../../model";
+
+/**
+ * Compact run-row hover content using already-loaded workflow-run fields.
+ * Rendering must pass each line through MarkdownString.appendText.
+ */
+export interface RunHoverTooltipContent {
+  lines: string[];
+  url?: string;
+}
+
+function shortText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const characters = Array.from(normalized);
+  return characters.length > maxLength ? characters.slice(0, maxLength - 1).join("") + "…" : normalized;
+}
+
+function runStatus(run: WorkflowRun): string | undefined {
+  const state = run.status === "completed" ? run.conclusion || run.status : run.status || run.conclusion;
+  const labels: Record<string, string> = {
+    action_required: "Action required",
+    cancelled: "Cancelled",
+    completed: "Completed",
+    failure: "Failed",
+    in_progress: "In progress",
+    neutral: "Neutral",
+    pending: "Pending",
+    queued: "Queued",
+    requested: "Requested",
+    skipped: "Skipped",
+    stale: "Stale",
+    startup_failure: "Startup failure",
+    success: "Succeeded",
+    timed_out: "Timed out",
+    waiting: "Waiting"
+  };
+  if (!state) {
+    return undefined;
+  }
+
+  const readable = Object.prototype.hasOwnProperty.call(labels, state)
+    ? labels[state]
+    : shortText(state.replace(/_/g, " "), 32);
+  return readable ? `${readable.charAt(0).toUpperCase()}${readable.slice(1)}` : undefined;
+}
+
+function timestamp(value: unknown): number | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  // GitHub timestamps are timezone-qualified ISO-8601, not arbitrary Date.parse input.
+  const match = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match) {
+    return undefined;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendarDate.getUTCFullYear() !== year ||
+    calendarDate.getUTCMonth() !== month - 1 ||
+    calendarDate.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function compactDuration(milliseconds: number): string {
+  let seconds = Math.floor(milliseconds / 1000);
+  const days = Math.floor(seconds / 86400);
+  seconds %= 86400;
+  const hours = Math.floor(seconds / 3600);
+  seconds %= 3600;
+  const minutes = Math.floor(seconds / 60);
+  seconds %= 60;
+
+  const parts: string[] = [];
+  if (days) {
+    parts.push(`${days}d`);
+  }
+  if (hours) {
+    parts.push(`${hours}h`);
+  }
+  if (minutes) {
+    parts.push(`${minutes}m`);
+  }
+  if (seconds) {
+    parts.push(`${seconds}s`);
+  }
+  return parts.join(" ") || "0s";
+}
+
+/** A short, approximate age; never confuse queued creation time with the run start. */
+function compactAge(then: number, now: number): string {
+  const seconds = Math.floor((now - then) / 1000);
+  if (seconds < 60) {
+    return "now";
+  }
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/** Only direct HTTPS links to this run are exposed; works with Enterprise hostnames. */
+function safeRunUrl(value: unknown, runId: number): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      !url.hostname.includes(".") ||
+      !/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/i.test(url.hostname) ||
+      /(^|\.)localhost$/i.test(url.hostname)
+    ) {
+      return undefined;
+    }
+
+    const match = /^\/[a-z0-9_.-]+\/[a-z0-9_.-]+\/actions\/runs\/([1-9]\d*)(?:\/attempts\/[1-9]\d*)?\/?$/i.exec(
+      url.pathname
+    );
+    if (!match || Number(match[1]) !== runId) {
+      return undefined;
+    }
+    return url.href;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getRunHoverTooltipContent(
+  run: WorkflowRun,
+  workflowName?: string,
+  now = Date.now()
+): RunHoverTooltipContent {
+  const lines: string[] = [];
+  const name = shortText(workflowName, 52) || shortText(run.name, 52) || "Workflow";
+  const status = runStatus(run);
+  const identity = `${name} #${run.run_number}`;
+  lines.push(status ? `${status} · ${identity}` : identity);
+
+  // display_title is a run title, not necessarily the subject of head_commit.
+  const subject =
+    typeof run.head_commit?.message === "string"
+      ? run.head_commit.message.split(/[\r\n\u2028\u2029]/, 1)[0]
+      : undefined;
+  const commitSubject = shortText(subject, 72);
+  if (commitSubject) {
+    lines.push(commitSubject);
+  }
+
+  const branch = shortText(run.head_branch, 52);
+  const sha =
+    typeof run.head_sha === "string" && /^[0-9a-f]{40}$/i.test(run.head_sha) ? run.head_sha.slice(0, 6) : undefined;
+  // A pull_request run SHA may be a synthetic merge commit, not the contributor's tip.
+  const displayedSha = sha && run.event === "pull_request" ? `${sha} (PR run SHA)` : sha;
+  const revision = [branch, displayedSha].filter(Boolean).join(" · ");
+  if (revision) {
+    lines.push(revision);
+  }
+
+  // A single secondary line keeps the tooltip scannable. All values are
+  // still sanitized plain text, never interpreted as Markdown links.
+  const metadata: string[] = [];
+  const started = timestamp(run.run_started_at);
+  const notStarted = ["queued", "requested", "waiting", "pending"].includes(run.status || "");
+  if (!notStarted && started !== undefined && started <= now) {
+    if (run.status === "completed" && run.conclusion && run.conclusion !== "skipped") {
+      const updated = timestamp(run.updated_at);
+      if (updated !== undefined && updated > started) {
+        // updated_at is only an approximation of the actual completion time.
+        metadata.push(`~${compactDuration(updated - started)}`);
+      }
+    }
+    metadata.push(compactAge(started, now));
+  } else if (notStarted) {
+    const created = timestamp(run.created_at);
+    if (created !== undefined && created <= now) {
+      metadata.push(`created ${compactAge(created, now)}`);
+    }
+  }
+
+  const event = shortText(run.event, 24);
+  if (event) {
+    metadata.push(event);
+  }
+  const triggeringActor = shortText(run.triggering_actor?.login, 32);
+  const originalActor = shortText(run.actor?.login, 32);
+  if (triggeringActor) {
+    metadata.push(`@${triggeringActor}`);
+  } else if (originalActor) {
+    metadata.push(`actor @${originalActor}`);
+  }
+  const attempt = run.run_attempt;
+  if (typeof attempt === "number" && Number.isInteger(attempt) && attempt > 1) {
+    metadata.push(`Attempt ${attempt}`);
+  }
+  if (metadata.length) {
+    lines.push(metadata.join(" · "));
+  }
+
+  return {lines, url: safeRunUrl(run.html_url, run.id)};
+}

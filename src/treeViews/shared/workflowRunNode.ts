@@ -1,13 +1,15 @@
 import * as vscode from "vscode";
 
+import {showWorkflowRunCommitHash} from "../../configuration/configuration";
 import {GitHubRepoContext} from "../../git/repository";
 import {RunStore} from "../../store/store";
 import {WorkflowRun} from "../../store/workflowRun";
 import {getIconForWorkflowRun} from "../icons";
-import {getEventString, getStatusString} from "./runTooltipHelper";
+import {getRunHoverTooltipContent} from "./workflowRunHoverTooltip";
 import {NoWorkflowJobsNode} from "./noWorkflowJobsNode";
 import {PreviousAttemptsNode} from "./previousAttemptsNode";
 import {WorkflowJobNode} from "./workflowJobNode";
+import {formatWorkflowRunLabel} from "./workflowRunLabel";
 
 export type WorkflowRunCommandArgs = Pick<WorkflowRunNode, "gitHubRepoContext" | "run" | "store">;
 
@@ -25,12 +27,16 @@ export class WorkflowRunNode extends vscode.TreeItem {
 
   updateRun(run: WorkflowRun) {
     this.run = run;
-    this.label = WorkflowRunNode._getLabel(run, this.workflowName);
+    this.refreshLabel();
 
     this.contextValue = this.run.contextValue(this.gitHubRepoContext.permissionLevel);
 
     this.iconPath = getIconForWorkflowRun(this.run.run);
     this.tooltip = this.getTooltip();
+  }
+
+  refreshLabel(): void {
+    this.label = WorkflowRunNode._getLabel(this.run, this.workflowName);
   }
 
   async getJobs(): Promise<(WorkflowJobNode | NoWorkflowJobsNode | PreviousAttemptsNode)[]> {
@@ -48,20 +54,37 @@ export class WorkflowRunNode extends vscode.TreeItem {
   }
 
   getTooltip(): vscode.MarkdownString {
-    let markdownString = "";
+    const content = getRunHoverTooltipContent(this.run.run, this.workflowName);
+    const tooltip = new vscode.MarkdownString();
 
-    if (this.run.hasPreviousAttempts && this.run.run.run_attempt) {
-      markdownString += `Attempt #${this.run.run.run_attempt} `;
+    for (const [index, line] of content.lines.entries()) {
+      if (index > 0) {
+        tooltip.appendMarkdown("  \n");
+      }
+      // Emphasize the status-first heading without treating GitHub text as Markdown.
+      if (index === 0) {
+        tooltip.appendMarkdown("**");
+      }
+      tooltip.appendText(line);
+      if (index === 0) {
+        tooltip.appendMarkdown("**");
+      }
     }
 
-    markdownString += getStatusString(this.run, markdownString.length == 0);
-    markdownString += `\n\n`;
-    markdownString += getEventString(this.run);
+    if (content.url) {
+      tooltip.appendMarkdown("\n\n[Open run on GitHub](" + content.url + ")");
+    }
 
-    return new vscode.MarkdownString(markdownString);
+    return tooltip;
   }
 
   private static _getLabel(run: WorkflowRun, workflowName?: string): string {
-    return `${workflowName ? workflowName + " " : ""}#${run.run.run_number}`;
+    return formatWorkflowRunLabel(
+      run.run.run_number,
+      workflowName,
+      run.run.head_sha,
+      showWorkflowRunCommitHash(),
+      run.run.head_branch
+    );
   }
 }
